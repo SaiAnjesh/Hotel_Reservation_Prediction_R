@@ -67,6 +67,7 @@ print(sort(unique_counts_features, decreasing = TRUE))
 # From the numbers, we can understand that the number of booking_ids are same as the number of records
 # Which means that each record in the dataframe is a unique observation
 
+
 # Booking_ID                                            36275
 # no_of_adults                                              5
 # no_of_children                                            6
@@ -86,3 +87,40 @@ print(sort(unique_counts_features, decreasing = TRUE))
 # avg_price_per_room                                     3930
 # no_of_special_requests                                    6
 # booking_status                                            2
+
+# We can also understand that the dataframe consists of data from the year 2017 and 2018 data points
+
+# By the way, let us check our target variable:
+print(unique(hotel_reservation_data[,"booking_status"]))
+# We can see that there is a spelling mistake, we will change it during the process :)
+
+features_to_check <- c(
+  "no_of_adults",
+  "no_of_children",
+  "no_of_weekend_nights",
+  "no_of_week_nights",
+  "type_of_meal_plan",
+  "required_car_parking_space",
+  "room_type_reserved",
+  "arrival_year",
+  "arrival_month",
+  "arrival_date",
+  "market_segment_type",
+  "repeated_guest",
+  "no_of_special_requests",
+  "booking_status"
+)
+for( col_val in features_to_check) {
+  barplot(table(hotel_reservation_data[, col_val]), 
+          main = paste("Count of ", col_val, sep = ""), 
+          xlab = col_val, 
+          ylab = "Count")
+}
+
+# hist(
+#   x = realtors_data$price, 
+#   main = "Histogram of Prices", 
+#   xlab = "Price (In $ USD)",
+#   ylab = "Frequency")
+
+
