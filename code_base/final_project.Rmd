@@ -1,0 +1,192 @@
+---
+title: "Final Project"
+author: "Sai Anjesh"
+date: "2024-04-16"
+output: html_notebook
+---
+
+# HOTEL RESERVATION CANCELLATION PREDCITION
+
+
+```{r}
+## Importing Necessary Libraries
+##---------
+FUNCTIONS_PATH = "D:/UIS/Studies/Semester4/CSC532/Assignments/ML_Final_Project/ml_final_project/code_base/custom_functions.R"
+##---------
+source(FUNCTIONS_PATH)
+##---------
+library(dplyr)
+library(caret)
+library(glmnet)
+library(randomForest)
+library(gbm)
+library(keras)
+library(tfruns)
+library(abind)
+library(mltools)
+library(data.table)
+##---------
+```
+
+
+```{r}
+# I am creating this to save models
+# Most of the models take time to run
+# Can uuse these model objects later during the process
+
+# CHAT_GPT Assistance: how to create folder if it does not exist in R?
+# Specify the path to the folder you want to create
+models_folder_path <- "D:/UIS/Studies/Semester4/CSC532/Assignments/ML_Final_Project/ml_final_project/ALL_MODELS"
+
+# Check if the folder exists
+if (!file.exists(models_folder_path)) {
+  # If the folder does not exist, create it
+  dir.create(models_folder_path)
+  cat("Folder created successfully!\n")
+} else {
+  cat("Folder already exists!\n")
+}
+```
+
+
+#### Let us import dataset
+
+```{r}
+## File Paths
+input_folder_path = "D:/UIS/Studies/Semester4/CSC532/Assignments/ML_Final_Project/ml_final_project/input_datasets/"
+input_file_name = "hotel_reservations_dataset/Hotel Reservations.csv"
+hotel_reservation_data = paste(input_folder_path, input_file_name, sep = "")
+```
+
+```{r}
+hotel_reservation_data <- read.csv(file = hotel_reservation_data, header = TRUE)
+```
+
+#### Let us check some basic information
+
+```{r}
+## Primitive Information
+# Let us check the shape of the data
+print(paste("Number of Records : ", dim(hotel_reservation_data)[1]))
+print(paste("Number of Features : ", dim(hotel_reservation_data)[2]))
+
+# Let us check the feature name snad the structure
+str(hotel_reservation_data)
+
+# Check the summary
+summary(hotel_reservation_data)
+```
+
+
+
+##### Let us check the NA values
+
+```{r}
+# Let us check the NA cases
+# Check if there are missing values
+# And let us do a thorough check
+sum(is.na(hotel_reservation_data))
+colSums(is.na(hotel_reservation_data))
+
+# Check 1
+na_records <- hotel_reservation_data[!complete.cases(hotel_reservation_data), ]
+```
+
+
+Fortunately we don't have NA values, we shall continue to transform the structure.
+
+#### Let us convert the struture of the dataframe
+```{r}
+# Check the str
+str(hotel_reservation_data)
+
+categorized_features <- categorize_features(hotel_reservation_data)
+# Checking the column names
+cat("Numeric columns: \n------\n", paste(categorized_features$numeric_cols, collapse = ", "), "\n")
+cat("Factor columns: \n------\n", paste(categorized_features$factor_cols, collapse = ", "), "\n")
+cat("Character columns: \n------\n", paste(categorized_features$character_cols, collapse = ", "),"\n")
+```
+```{r}
+# # Let us check the character variables and understand the unique values
+# for(col_val in categorized_features$character_cols) {
+#   cat(paste("-----", col_val, "-----\n", sep = ""))
+#   cat(paste(sort(unique(hotel_reservation_data[[col_val]]), decreasing = F), collapse = ", "), "\n")
+# }
+
+```
+
+
+```{r}
+# Removing the first Column 
+# Jsut a unique identifier
+hotel_reservation_data$Booking_ID <- NULL
+
+# Final OutCome column - Modified
+# I We are chaging hte outcome variable, for simplfied understanding of the model and data
+hotel_reservation_data$booking_cancellation <- ifelse((hotel_reservation_data$booking_status == "Canceled"), "yes", "no")
+hotel_reservation_data$booking_cancellation <- factor(hotel_reservation_data$booking_cancellation)
+hotel_reservation_data$booking_status <- NULL
+
+hotel_reservation_data$market_segment_type <- factor(hotel_reservation_data$market_segment_type)
+hotel_reservation_data$type_of_meal_plan <- factor(hotel_reservation_data$type_of_meal_plan)
+hotel_reservation_data$room_type_reserved <- factor(hotel_reservation_data$room_type_reserved)
+
+# Since these are just variables
+# We are going to give life to it by assigneing various room types
+# CREDITS: https://hoteltechreport.com/news/room-type
+
+
+# c("Room_Type 1", "Room_Type 2", "Room_Type 3", "Room_Type 4", "Room_Type 5", "Room_Type 6", "Room_Type 7")
+# # c("standard_room", "deluxe_room", "joint_room", "connecting_room", "suite_room", "apartment_style_room", "accessible_room")
+
+
+```
+
+
+
+```{r}
+# Check the str
+str(hotel_reservation_data)
+
+categorized_features <- categorize_features(hotel_reservation_data)
+# Checking the column names
+cat("Numeric columns: \n------\n", paste(categorized_features$numeric_cols, collapse = ", "), "\n")
+cat("Factor columns: \n------\n", paste(categorized_features$factor_cols, collapse = ", "), "\n")
+cat("Character columns: \n------\n", paste(categorized_features$character_cols, collapse = ", "),"\n")
+```
+
+## NOTE: WE HAVE SKIPPED THE EDA PART....WE WILL HAVE TO COMPLETE IT
+
+
+#### Let us get started with the modeling
+
+```{r}
+# Let us check the class blance
+prop.table(table(hotel_reservation_data$booking_cancellation))
+```
+From the above classes table we can surely say that the 
+
+```{r}
+# Let us bacup saiing a data
+hotel_reservation_data_processed_bkup <- hotel_reservation_data
+```
+
+
+```{r}
+# Let us split the data into train and test
+# We are using 90% train and 10% test
+# We have over 30K reords
+train_index <- createDataPartition(y = hotel_reservation_data$booking_cancellation, p = 0.9, list = FALSE)
+hotel_reservation_data_train <- hotel_reservation_data[train_index, ]
+hotel_reservation_data_test <- hotel_reservation_data[-train_index, ]
+```
+
+
+```{r}
+t=table(hotel_reservation_data$booking_cancellation)
+w_yes=sum(t)/(t["yes"]*2)
+w_no=sum(t)/(t["no"]*2)
+w_yes
+w_no
+```
+
