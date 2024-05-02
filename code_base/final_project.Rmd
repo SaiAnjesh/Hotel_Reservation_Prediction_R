@@ -16,6 +16,7 @@ FUNCTIONS_PATH = "D:/UIS/Studies/Semester4/CSC532/Assignments/ML_Final_Project/m
 source(FUNCTIONS_PATH)
 ##---------
 library(dplyr)
+library(ROCR)
 library(caret)
 library(glmnet)
 library(randomForest)
@@ -183,10 +184,112 @@ hotel_reservation_data_test <- hotel_reservation_data[-train_index, ]
 
 
 ```{r}
-t=table(hotel_reservation_data$booking_cancellation)
-w_yes=sum(t)/(t["yes"]*2)
-w_no=sum(t)/(t["no"]*2)
-w_yes
-w_no
+# Let us determiine the class weights
+class_weights_values <- class_weight_determination_fn(output_var = hotel_reservation_data_train$booking_cancellation)
+class_weights_vector <- ifelse(hotel_reservation_data_train$booking_cancellation == "yes", 
+                               class_weights_values$weight_yes, class_weights_values$weight_no)
+
+```
+
+
+
+```{r}
+MODEL_LIST <- list()
+# Control Variables
+MODEL_K_FOLDS <- 10
+MODEL_CONTROL_METHOD <- "cv"
+MODEL_TRAIN_METHOD <- "gbm"
+MODEL_METRIC <- "ROC"
+MODEL_TRAIN_DATA <- hotel_reservation_data_train
+MODEL_TEST_DATA <- hotel_reservation_data_test
+MODEL_DV_VAR <- "booking_cancellation"
+##-------
+ALPHA_VALUE = list(
+  LASSO = 1,
+  RIDGE = 0,
+  ELASTIC = seq(0, 1, length = 10)
+)
+LAMBDA_GRID <- 10^seq(-3, 3, length = 100)
+``` 
+
+
+
+
+```{r}
+# First model
+set.seed(1)
+control_values <- trainControl(method = MODEL_CONTROL_METHOD, 
+                               number = MODEL_K_FOLDS, 
+                               classProbs = TRUE, 
+                               summaryFunction = twoClassSummary)
+
+m_weighted_gbm <- train(booking_cancellation ~ ., 
+                        data = MODEL_TRAIN_DATA, 
+                        method = "gbm", 
+                        weights = class_weights_vector,
+                        # verbose = TRUE, 
+                        verbose = FALSE, 
+                        metric = MODEL_METRIC, 
+                        trControl = control_values)
+print(m_weighted_gbm)
+# Savig the model objects for future use
+MODEL_NAME <- "GRADIENT_BOOST" 
+MODEL_LIST[["GRADIENT_BOOST"]] <- m_weighted_gbm
+saveRDS(RANDOM_FOREST_MODEL, file = paste(models_folder_path,"/", "RANDOM_FOREST_MODEL.rds",sep = ""))
+```
+
+
+```{r}
+set.seed(1)
+
+LASSO_MODEL <- train(booking_cancellation ~.,
+                     data = MODEL_TRAIN_DATA,
+                     method = "glmnet",
+                     metric = MODEL_METRIC,
+                     trControl = control_values,
+                     tuneGrid = expand.grid(alpha = ALPHA_VALUE$LASSO, lambda = LAMBDA_GRID),
+                     verboseIter = TRUE,
+                     verbose = TRUE)
+
+print(LASSO_MODEL)
+print(coef(LASSO_MODEL$finalModel, LASSO_MODEL$bestTune$lambda))
+
+# Model Saving Process
+
+saveRDS(RANDOM_FOREST_MODEL, file = paste(models_folder_path,"/", "RANDOM_FOREST_MODEL.rds",sep = ""))
+```
+
+```{r}
+
+
+# gbm_predictions_prob = predict(m_weighted_gbm, MODEL_TEST_DATA, type="prob")
+# gbm_predictions = prediction(predictions = gbm_predictions_prob$yes, MODEL_TEST_DATA$booking_cancellation)
+# 
+# performance(gbm_predictions, measure = "auc")@y.values
+# 
+# gbm_predicted_labels = predict(m_weighted_gbm, MODEL_TEST_DATA)
+# confusionMatrix(gbm_predicted_labels, MODEL_TEST_DATA$booking_cancellation, positive="yes", mode="everything")
+```
+
+
+```{r}
+# Models_List
+
+```
+
+
+```{r}
+# Models Evaluation
+for()
+print(classification_evaluation_fn(model_selected_var = m_weighted_gbm, 
+                                   test_data_selected = MODEL_TEST_DATA,
+                                   focus_outcome = MODEL_DV_VAR))
+
+```
+
+
+
+```{r}
+
 ```
 

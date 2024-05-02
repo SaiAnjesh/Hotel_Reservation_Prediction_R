@@ -48,6 +48,25 @@ model_evaluation_fn <- function(act_val, pred_val) {
   
 }
 
+classification_evaluation_fn <- function(model_selected_var, 
+                                         test_data_selected,
+                                         focus_outcome,
+                                         focus_class = "yes",
+                                         focus_metric = "auc") {
+  
+  predictions_prob = predict(model_selected_var, test_data_selected, type = "prob")
+  predictions = prediction(predictions = predictions_prob[[focus_class]], test_data_selected[[focus_outcome]])
+  
+  auc_value <- performance(predictions, measure = focus_metric)@y.values
+  auc_value <- auc_value[[1]]
+  
+  predicted_labels = predict(model_selected_var, test_data_selected)
+  conf_mat <- confusionMatrix(predicted_labels, 
+                              test_data_selected[[focus_outcome]], 
+                              positive = focus_class, mode="everything")
+  return(list(AUC_Value = auc_value, Confusion_Matrix = conf_mat))
+}
+
 
 #####-------------FUNCTION TO PERFORM ONE HOT ENCODING-------------#####
 
@@ -69,6 +88,14 @@ one_hot_encoding_fn <- function(data_val, features_to_encode) {
   
   # Returingin engcoded dataframe
   return(data_val_encoded)
+}
+
+#####-------------FUNCTION TO DETERMINE CLASS WEIGHTS-------------#####
+class_weight_determination_fn <- function(output_var) {
+  t <- table(output_var)
+  w_yes <- sum(t)/(t["yes"]*2)
+  w_no <- sum(t)/(t["no"]*2)
+  return(list(weight_yes = w_yes, weight_no = w_no))
 }
 
 
