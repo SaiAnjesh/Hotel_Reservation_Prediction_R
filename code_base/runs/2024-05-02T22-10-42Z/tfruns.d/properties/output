@@ -1,0 +1,30 @@
+
+> ###-----HYPER PARAMETER TUNING-----###
+> # Reusing code chunks from the lecture notes
+> 
+> # Setting up data sets
+> data_dict <- list(
++   "train_id ..." ... [TRUNCATED] 
+
+> # Setting up the flaGs
+> FLAGS <- flags(
++   flag_numeric("nodes", 512),
++   flag_numeric("batch_size", 32),
++   flag_string("activation", "sigmoid" .... [TRUNCATED] 
+
+> # # We are not implementing Early Stopping as it can cause over fitting
+> # # Implementing Early Stopping
+> # callbacks <- list(callback_early_stopp .... [TRUNCATED] 
+
+> tuning_model %>%
++   layer_dense(units = FLAGS$nodes, activation = FLAGS$activation, input_shape = dim(data_dict$train_idv)[2]) %>%
++   layer_dropou .... [TRUNCATED] 
+
+> tuning_model %>% compile(optimizer = optimizer_adam(learning_rate = FLAGS$learning_rate),
++                          loss = 'binary_crossentropy',
++ .... [TRUNCATED] 
+
+> tuning_model %>% fit(data_dict$train_idv,
++                      data_dict$train_dv,
++                      batch_size = FLAGS$batch_size,
++         .... [TRUNCATED] 

@@ -26,7 +26,6 @@ library(tfruns)
 library(abind)
 library(mltools)
 library(data.table)
-library(pROC)
 ##---------
 ```
 
@@ -39,8 +38,8 @@ library(pROC)
 # CHAT_GPT Assistance: how to create folder if it does not exist in R?
 # Specify the path to the folder you want to create
 models_folder_path <- "D:/UIS/Studies/Semester4/CSC532/Assignments/ML_Final_Project/ml_final_project/ALL_MODELS"
-over_write_models <- T
-# over_write_models <- F
+# over_write_models <- T
+over_write_models <- F
 
 # Check if the folder exists
 if (!file.exists(models_folder_path)) {
@@ -161,29 +160,6 @@ cat("Character columns: \n------\n", paste(categorized_features$character_cols, 
 
 ## NOTE: WE HAVE SKIPPED THE EDA PART....WE WILL HAVE TO COMPLETE IT
 
-```{r}
-# Defining Target Variable
-target_DV <- "booking_cancellation"
-```
-
-
-```{r}
-# Checking the association of variables with target variable
-
-assoc_num_df <- association_numerical_categorical(df = hotel_reservation_data,
-                                                  numer_vars = categorized_features$numeric_cols,
-                                                  target_var = target_DV)
-
-assoc_fac_df <- association_categorical_categorical(df = hotel_reservation_data,
-                                                    factor_vars = categorized_features$factor_cols,
-                                                    target_var = target_DV)
-
-qualified_features_data <- assoc_num_df %>% rbind.data.frame(assoc_fac_df)
-
-# CHATGPT: how to sort a dataframe in R?
-qualified_features_data[order(qualified_features_data$result, decreasing = FALSE), ]
-```
-
 
 #### Let us get started with the modeling
 
@@ -218,90 +194,13 @@ class_weights_vector <- ifelse(hotel_reservation_data_train$booking_cancellation
 ```
 
 
-#### Before deep dive into sophisticated modeling techniques, let us perform some simple heuristic calculation (AKA: Heuristic Model) to understand the data
-
-Why did we select this variable? Usually reservation is cancelled only if booked. (Your reaction : Obviously) There are several variables in that can affect the cancellation but from a receptionist / owner point of view if there is cancellation after several days it gets really frustrating. Hence this is feature to concentrate. 
-
-```{r}
-# To understand the possibility of the reservation getting cancelled
-# We have to understand the nummber of days between the date of booking and the arrival date
-plot(hotel_reservation_data_train$lead_time ~ hotel_reservation_data_train$booking_cancellation, 
-     col="orange", 
-     main = paste("Box Plot - lead_time vs. booking_cancellation", sep = ""),
-     xlab = "Cancellation",
-     ylab = "Lead Time",
-     horizontal = TRUE)
-
-# For "yes" category
-summary_chk = summary(hotel_reservation_data_train[hotel_reservation_data_train$booking_cancellation == "yes", "lead_time"])
-
-
-```
-
-From the above graph we can understand that the if the lead time crosses 100 days, then there is huge possibility of the room reservation getting cancelled. Hence, we are going to use the median value to classfy the value.
-
-
-
-Let us create becnh mark model by assessing the train data
-```{r}
-# Let us create separate train and test data for bench marking model
-hotel_reservation_data_train_BENCHMARK <- hotel_reservation_data_train
-hotel_reservation_data_test_BENCHMARK <- hotel_reservation_data_test
-
-# Let us perform our prediction (or say it a guess work... :D)
-hotel_reservation_data_test_BENCHMARK <- hotel_reservation_data_test_BENCHMARK %>%  mutate(
-  prediction = ifelse(hotel_reservation_data_test_BENCHMARK$lead_time >= summary_chk[["Median"]], "yes", "no"))
-hotel_reservation_data_test_BENCHMARK$prediction <- factor(hotel_reservation_data_test_BENCHMARK$prediction)
-```
-
-```{r}
-# Evaluaition of Benchamrk model
-auc_result <- auc(roc(as.numeric(hotel_reservation_data_test_BENCHMARK$booking_cancellation),
-                      as.numeric(hotel_reservation_data_test_BENCHMARK$prediction)))
-
-conf_mat <- confusionMatrix(hotel_reservation_data_test_BENCHMARK$prediction, 
-                            hotel_reservation_data_test_BENCHMARK$booking_cancellation, 
-                            positive = "yes", 
-                            mode="everything")
-
-auc_result
-conf_mat
-```
-
-
-```{r}
-TP = 3391
-TN = 668
-FP = 492
-FN = 2656
-
-precision <- TP / (TP + FP)
-
-# Calculate Recall
-recall <- TP / (TP + FN)
-
-# Calculate F1 Score
-F1_score <- 2 * precision * recall / (precision + recall)
-
-# Print the results
-cat("Precision:", precision, "\n")
-cat("Recall:", recall, "\n")
-cat("F1 Score:", F1_score, "\n")
-```
-
-
-
-
-
-# Modeling
 
 ```{r}
 # Variable to contain the list of models
 MODEL_LIST <- list()
 
 # Control Variables
-# MODEL_K_FOLDS <- 10
-MODEL_K_FOLDS <- 5
+MODEL_K_FOLDS <- 10
 MODEL_CONTROL_METHOD <- "cv"
 # MODEL_TRAIN_METHOD <- "gbm"
 MODEL_METRIC <- "ROC"
@@ -315,15 +214,6 @@ ALPHA_VALUE = list(
   ELASTIC = seq(0, 1, length = 10)
 )
 LAMBDA_GRID <- 10^seq(-3, 3, length = 100)
-```
-
-```{r}
-set.seed(1)
-control_values <- trainControl(method = MODEL_CONTROL_METHOD, 
-                               number = MODEL_K_FOLDS, 
-                               classProbs = TRUE, 
-                               summaryFunction = twoClassSummary, 
-                               verboseIter = TRUE)
 ``` 
 
 
@@ -335,22 +225,23 @@ if(over_write_models) {
   print("Running Model...")
   
   set.seed(1)
-  # Automatice Tuning / Not included hyper parmater values
-  grid_gbm <- expand.grid(
-    n.trees = c(50, 100, 150, 200),
-    shrinkage = c(0.01, 0.05, 0.1))
-  GRADIENT_BOOST_MODEL <- train(booking_cancellation ~ ., 
-                                data = MODEL_TRAIN_DATA, 
-                                method = "gbm", 
-                                weights = class_weights_vector,
-                                metric = MODEL_METRIC, 
-                                trControl = control_values,
-                                tuneGrid = grid_gbm,
-                                verbose = TRUE)
-  print(GRADIENT_BOOST_MODEL)
+  control_values <- trainControl(method = MODEL_CONTROL_METHOD, 
+                                 number = MODEL_K_FOLDS, 
+                                 classProbs = TRUE, 
+                                 summaryFunction = twoClassSummary)
+  
+  m_weighted_gbm <- train(booking_cancellation ~ ., 
+                          data = MODEL_TRAIN_DATA, 
+                          method = "gbm", 
+                          weights = class_weights_vector,
+                          verbose = TRUE,
+                          # verbose = FALSE, 
+                          metric = MODEL_METRIC, 
+                          trControl = control_values)
+  print(m_weighted_gbm)
   
   # Savig the model objects for future use
-  MODEL_NAME <- "GRADIENT_BOOST_MODEL"; MODEL_LIST[[MODEL_NAME]] <- GRADIENT_BOOST_MODEL;
+  MODEL_NAME <- "GRADIENT_BOOST"; MODEL_LIST[[MODEL_NAME]] <- m_weighted_gbm;
   saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
 }
 
@@ -362,17 +253,13 @@ if(over_write_models) {
   print("Running Model...")
   
   set.seed(1)
-  
 
-  grid_lasso <- expand.grid(alpha = ALPHA_VALUE$LASSO, lambda = LAMBDA_GRID)
-  
   LASSO_MODEL <- train(booking_cancellation ~.,
                        data = MODEL_TRAIN_DATA,
                        method = "glmnet",
-                       weights = class_weights_vector,
                        metric = MODEL_METRIC,
                        trControl = control_values,
-                       tuneGrid = grid_lasso,
+                       tuneGrid = expand.grid(alpha = ALPHA_VALUE$LASSO, lambda = LAMBDA_GRID),
                        verboseIter = TRUE,
                        verbose = TRUE)
   
@@ -380,7 +267,7 @@ if(over_write_models) {
   # print(coef(LASSO_MODEL$finalModel, LASSO_MODEL$bestTune$lambda))
   
   # Savig the model objects for future use
-  MODEL_NAME <- "LASSO_MODEL"; MODEL_LIST[[MODEL_NAME]] <- LASSO_MODEL;
+  MODEL_NAME <- "LASSO_LOGISTIC"; MODEL_LIST[[MODEL_NAME]] <- LASSO_MODEL;
   saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
 }
 
@@ -396,91 +283,22 @@ if(over_write_models) {
 # confusionMatrix(gbm_predicted_labels, MODEL_TEST_DATA$booking_cancellation, positive="yes", mode="everything")
 ```
 
+
 ```{r}
-# Third MOdel - RF Model
-# Descision tree is sensitive class imbalance
-# Resusing the codes from the lectures
-set.seed(1)
-
-# ctrl <- trainControl(method = "cv", number = 10)
-grid_rf <- expand.grid(mtry= c(2))
-# grid_rf <- expand.grid(mtry= c(2, 4, 8))
-
-RANDOM_FOREST_MODEL <- train(  booking_cancellation ~.,
-                               data = MODEL_TRAIN_DATA,
-                               method = "rf",
-                               weights = class_weights_vector,
-                               metric = MODEL_METRIC,
-                               trControl = control_values,
-                               tuneGrid = grid_rf,
-                               importance = TRUE,
-                               verbose = TRUE)
-
-print(RANDOM_FOREST_MODEL)
-
-# Savig the model objects for future use
-MODEL_NAME <- "RANDOM_FOREST_MODEL"; MODEL_LIST[[MODEL_NAME]] <- RANDOM_FOREST_MODEL;
-saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
+# Models_List
 
 ```
 
 
 ```{r}
-# Undersanding the important features
-var_importance_RFM <- varImp(RANDOM_FOREST_MODEL)
-
-# Let us check the features
-print(var_importance_RFM)
-plot(var_importance_RFM)
-
-# HAT GPT ASSISTANCE : TO the get the variable importance plot in pdf file
-png(filename = "variable_importance.png")
-plot(var_importance_RFM, width = 10, height = 10)
-while (!is.null(dev.list()))  dev.off()
-```
-
-
-```{r}
-# Fourth Model
-# Set seed - for reproducibility
-set.seed(1)
-
-# Define Train Control for SVM
-train_control_SVM <- trainControl(method = MODEL_CONTROL_METHOD, 
-                              number = MODEL_K_FOLDS, 
-                              classProbs = TRUE, 
-                              summaryFunction = twoClassSummary, 
-                              preProc = c("center", "scale"),
-                              verboseIter = TRUE)
-
-# Set Up MOdel
-
-grid_svm <- expand.grid(C = c(.5, 1, 3, 5))
-
-SVM_LINEAR_MODEL <- train( booking_cancellation ~.,
-                           data = MODEL_TRAIN_DATA,
-                           method = "svmLinear",
-                           weights = class_weights_vector,
-                           metric = MODEL_METRIC,
-                           trControl = train_control_SVM,
-                           tuneGrid = grid_svm,
-                           verboseIter = TRUE,
-                           verbose = TRUE)
-
-# print(SVM_LINEAR_MODEL)
-
-
-```
-
-```{r}
-# # Pausing ----
-# Models Evaluation
-for(model_select in names(MODEL_LIST)) {
-  cat(paste("####-----",model_select,"-----####\n", sep = ""))
-  print(classification_evaluation_fn(model_selected_var = MODEL_LIST[[model_select]],
-                                   test_data_selected = MODEL_TEST_DATA,
-                                   focus_outcome = MODEL_DV_VAR))
-}
+# Pausing ----
+# # Models Evaluation
+# for(model_select in names(MODEL_LIST)) {
+#   cat(paste("####-----",model_select,"-----####\n", sep = ""))
+#   print(classification_evaluation_fn(model_selected_var = MODEL_LIST[[model_select]], 
+#                                    test_data_selected = MODEL_TEST_DATA,
+#                                    focus_outcome = MODEL_DV_VAR))
+# }
 # print(classification_evaluation_fn(model_selected_var = m_weighted_gbm,
 #                                    test_data_selected = MODEL_TEST_DATA,
 #                                    focus_outcome = MODEL_DV_VAR))
@@ -682,83 +500,15 @@ as.data.frame(runs)
 
 ```{r}
 # Let’s view the summary of the best run
-view_run(runs$run_dir[1])
+view_run(runs$run_dir[1]) 
 ```
 
 ```{r}
 # Saving runs for future use
-# class(runs)
-# MODEL_NAME <- "NEURAL_NETWORK"; MODEL_LIST[[MODEL_NAME]] <- LASSO_MODEL;
-# saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
+class(runs)
+runs_save_file_path = "D:/UIS/Studies/Semester4/CSC532/Assignments/Assignment5/regularization_ensemble_project/code_base/All Models Folder/"
 runs_save_file_name = paste("NN_RUNS_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv", sep = "")
-runs_save_file_name = paste(models_folder_path,"/", runs_save_file_name, sep = "")
+runs_save_file_name = paste(runs_save_file_path, runs_save_file_name, sep = "")
 write.csv(runs, file = runs_save_file_name, row.names = FALSE)
 print(paste(runs_save_file_name, " - file saved"))
 ```
-
-```{r}
-# Let us conctaente the val and train datasets
-all_train_x <- abind(train_IDV, val_IDV, along = 1)
-all_train_y <- abind(train_DV, val_DV, along = 1)
-str(all_train_x)
-str(all_train_y)
-```
-
-
-Let us perform the final model (neural networks)
-
-```{r}
-# Tunedd Parameters Values
-final_tuned_params <- list(
-  "nodes" = 8,
-  "batch_size" = 8,
-  "activation" = "sigmoid",
-  "learning_rate" = 0.01,
-  "epochs" = 10
-)
-
-```
-
-```{r}
-
-# Final Neural Network model
-final_model <- keras_model_sequential()
-
-final_model %>%
-  layer_dense(units = final_tuned_params$nodes, activation = final_tuned_params$activation, input_shape = dim(all_train_x)[2]) %>%
-  layer_dropout(rate = 0.5) %>%
-  layer_dense(units = final_tuned_params$nodes, activation = final_tuned_params$activation ) %>%
-  layer_dropout(rate = 0.5) %>%
-  layer_dense(units = final_tuned_params$nodes, activation = final_tuned_params$activation ) %>%
-  layer_dropout(rate = 0.5) %>%
-  layer_dense(units = 1, activation = final_tuned_params$activation)
-
-final_model %>% compile(optimizer = optimizer_adam(learning_rate = final_tuned_params$learning_rate), 
-                        loss = 'binary_crossentropy',
-                        metrics = c('accuracy'))
-
-final_model_compile <- final_model %>% fit(x = all_train_x,
-                                           y = all_train_y,
-                                           batch_size = final_tuned_params$batch_size,
-                                           epochs = final_tuned_params$epochs,
-                                           class_weight = list("0" = class_weights_values$weight_no, 
-                                                               "1" = class_weights_values$weight_yes),
-                                           verbose = 1)
-```
-
-Let us evaluate the final model.
-
-```{r}
-final_model %>% evaluate(test_IDV, test_DV)
-```
-
-```{r}
-predicted_probs = final_model %>% predict(test_IDV)
-ann_predictions = prediction(predicted_probs, test_DV)
-
-performance(ann_predictions, measure = "auc")@y.values
-
-predicted.labels= factor(ifelse(predicted_probs>0.5, "1", "0"))
-confusionMatrix(predicted.labels, as.factor(test_DV), mode="everything", positive="1")
-```
-
