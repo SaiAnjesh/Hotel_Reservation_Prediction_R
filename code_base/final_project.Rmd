@@ -81,6 +81,62 @@ str(hotel_reservation_data)
 summary(hotel_reservation_data)
 ```
 
+#### Interesting to see that there are cases of $0 price for certain cases let us look into this section of the data
+```{r}
+# For EDA
+hotel_reservation_data_EDA <- hotel_reservation_data
+hotel_reservation_data$booking_cancellation <- ifelse((hotel_reservation_data$booking_status == "Canceled"), T, F)
+hotel_reservation_data_EDA$Date <- as.Date(paste(hotel_reservation_data_EDA$arrival_year, 
+                                                 hotel_reservation_data_EDA$arrival_month, 
+                                                 hotel_reservation_data_EDA$arrival_date, sep = "-"),
+                                           format = "%Y-%m-%d")
+
+# Print the result
+# print(hotel_reservation_data_EDA$Date)
+print(nrow(hotel_reservation_data_EDA))
+print(length(unique(hotel_reservation_data_EDA$Date)))
+print(summary(hotel_reservation_data_EDA$Date))
+
+# Understand the dates
+hotel_reservation_data_EDA_NA_Dates <- hotel_reservation_data_EDA[is.na(hotel_reservation_data_EDA$Date), 
+                                                                  c("arrival_year", "arrival_month",
+                                                                    "arrival_date", "Date",
+                                                                    "avg_price_per_room")]
+dates_orig_data <- hotel_reservation_data_EDA[,c("arrival_year", "arrival_month","arrival_date", 
+                                                 "Date",
+                                                 "avg_price_per_room")]
+```
+What we can understand here is there are just data poitns for 1.5 (From July 2017 to Dec 2018) years and very funny we have 29th feb date in year 2018. Yeah, I know right!? How can Feb have 29 days in 2018. Fun fact: Prices have been alloted for these dates. 
+
+This is either data entry problem or data loss / corruption problem.
+
+```{r}
+# Let us check date before and post 29 Feb 2018
+dates_orig_data_grp <- (dates_orig_data %>% 
+                          group_by(Date) %>% 
+                          summarise(total = n()) %>% 
+                          filter(Date == as.Date("2018-02-28") | Date == as.Date("2018-03-01")))
+```
+
+
+We see that there are only 61 records in Mar 1 2018 and 165 Records in Feb 28. So, I am gonna update the Feb 29 value
+Let us further inspact the date column.
+
+```{r}
+# Understading the date
+date_check_data <- data.frame(
+  Date = seq(as.Date("2017-07-01"), as.Date("2018-12-31"), by = "day")
+)
+str(dates_orig_data)
+str(date_check_data)
+date_check_data <- merge(x = date_check_data, y = dates_orig_data, by = "Date", all.x = T)
+sum(is.na(date_check_data))
+
+
+
+
+```
+
 
 
 ##### Let us check the NA values
@@ -116,7 +172,6 @@ cat("Character columns: \n------\n", paste(categorized_features$character_cols, 
 #   cat(paste("-----", col_val, "-----\n", sep = ""))
 #   cat(paste(sort(unique(hotel_reservation_data[[col_val]]), decreasing = F), collapse = ", "), "\n")
 # }
-
 ```
 
 
@@ -127,6 +182,7 @@ hotel_reservation_data$Booking_ID <- NULL
 
 # Final OutCome column - Modified
 # I We are chaging hte outcome variable, for simplfied understanding of the model and data
+# We are more interesetd in understanding people who would end up canceling a booked room.
 hotel_reservation_data$booking_cancellation <- ifelse((hotel_reservation_data$booking_status == "Canceled"), "yes", "no")
 hotel_reservation_data$booking_cancellation <- factor(hotel_reservation_data$booking_cancellation)
 hotel_reservation_data$booking_status <- NULL
