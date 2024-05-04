@@ -1,0 +1,6 @@
+{
+  "nodes": 392,
+  "batch_size": 16,
+  "activation": "sigmoid",
+  "learning_rate": 0.001
+}

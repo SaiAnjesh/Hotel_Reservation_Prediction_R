@@ -27,6 +27,9 @@ library(abind)
 library(mltools)
 library(data.table)
 library(pROC)
+library(ggplot2)
+library(reshape2)
+library(tidyr)
 ##---------
 ```
 
@@ -39,8 +42,8 @@ library(pROC)
 # CHAT_GPT Assistance: how to create folder if it does not exist in R?
 # Specify the path to the folder you want to create
 models_folder_path <- "D:/UIS/Studies/Semester4/CSC532/Assignments/ML_Final_Project/ml_final_project/ALL_MODELS"
-over_write_models <- T
-# over_write_models <- F
+# over_write_models <- T
+over_write_models <- F
 
 # Check if the folder exists
 if (!file.exists(models_folder_path)) {
@@ -106,9 +109,9 @@ dates_orig_data <- hotel_reservation_data_EDA[,c("arrival_year", "arrival_month"
                                                  "Date",
                                                  "avg_price_per_room")]
 ```
-What we can understand here is there are just data poitns for 1.5 (From July 2017 to Dec 2018) years and very funny we have 29th feb date in year 2018. Yeah, I know right!? How can Feb have 29 days in 2018. Fun fact: Prices have been alloted for these dates. 
+#### What we can understand here is there are just data poitns for 1.5 (From July 2017 to Dec 2018) years and very funny we have 29th feb date in year 2018. Yeah, I know right!? How can Feb have 29 days in 2018. Fun fact: Prices have been alloted for these dates. 
 
-This is either data entry problem or data loss / corruption problem.
+#### This is either data entry problem or data loss / corruption problem.
 
 ```{r}
 # Let us check date before and post 29 Feb 2018
@@ -116,28 +119,113 @@ dates_orig_data_grp <- (dates_orig_data %>%
                           group_by(Date) %>% 
                           summarise(total = n()) %>% 
                           filter(Date == as.Date("2018-02-28") | Date == as.Date("2018-03-01")))
+print(dates_orig_data_grp)
 ```
 
 
-We see that there are only 61 records in Mar 1 2018 and 165 Records in Feb 28. So, I am gonna update the Feb 29 value
-Let us further inspact the date column.
+#### We see that there are only 61 records in Mar 1 2018 and 165 Records in Feb 28. So, I am gonna update the Feb 29 value as Mar 1 to be fair.
 
 ```{r}
-# Understading the date
-date_check_data <- data.frame(
-  Date = seq(as.Date("2017-07-01"), as.Date("2018-12-31"), by = "day")
-)
-str(dates_orig_data)
-str(date_check_data)
-date_check_data <- merge(x = date_check_data, y = dates_orig_data, by = "Date", all.x = T)
-sum(is.na(date_check_data))
+# Updating the input dataset
+filter_condition = ((hotel_reservation_data$arrival_date == 29) & 
+                      (hotel_reservation_data$arrival_month == 2) & 
+                      (hotel_reservation_data$arrival_year == 2018))
+hotel_reservation_data[filter_condition, "arrival_date"] = 1
+hotel_reservation_data[filter_condition, "arrival_month"] = 3
 
 
+print(summary(
+  as.Date(paste(hotel_reservation_data$arrival_year, 
+                hotel_reservation_data$arrival_month, 
+                hotel_reservation_data$arrival_date, sep = "-"),
+          format = "%Y-%m-%d")))
+```
+So there are no NAs and 549 unique values.
 
+Now let us understand the price againfdt the date and cancellation feature.
 
+```{r}
+# For EDA
+hotel_reservation_data_EDA <- hotel_reservation_data
 ```
 
 
+```{r}
+# Price Data Summarization
+price_summary_data <- hotel_reservation_data_EDA
+price_summary_data$Date <- as.Date(paste(hotel_reservation_data_EDA$arrival_year, 
+                                                 hotel_reservation_data_EDA$arrival_month, 
+                                                 hotel_reservation_data_EDA$arrival_date, sep = "-"),
+                                           format = "%Y-%m-%d")
+price_summary_data <- ( 
+  price_summary_data %>% 
+    select(all_of(c("arrival_year", "arrival_month", "arrival_date", "Date","avg_price_per_room", "booking_cancellation"))) %>% 
+    group_by(Date) %>%
+    summarise(price_avg = mean(avg_price_per_room),
+              price_min = min(avg_price_per_room),
+              price_max = max(avg_price_per_room),
+              number_book_cancelled = sum(booking_cancellation)))
+# Anther Date Column: to check what all dates have no price points
+
+date_check_data <- data.frame(Date = seq(as.Date("2017-07-01"), as.Date("2018-12-31"), by = "day"))
+date_check_data$all_dates_flag <- 1
+
+price_summary_data <- merge(x = price_summary_data, y = date_check_data, by = "Date", all.x = T)
+
+# Let us check if we have missed any date time
+print("Number of dates that have no price points : ")
+print(nrow((price_summary_data[(price_summary_data$all_dates_flag != 1), ])))
+```
+
+Since it is zero, I believ we have all the dates in the 1.5 years period and let us see the price points graph
+Let us further inspact the date& price column.
+
+```{r}
+
+# Let us create a dataframe that and plot relevant graphs
+# https://stackoverflow.com/questions/17150183/plot-multiple-lines-in-one-graph
+# https://www.statology.org/ggplot2-multiple-lines/
+mdf = melt(price_summary_data, id.vars = c("Date"), measure.vars = c("price_avg", "price_min", "price_max"))
+mdf_cancel = melt(price_summary_data, id.vars = c("Date"), measure.vars = c("number_book_cancelled"))
+mdf_cancel_2018 = mdf_cancel %>% filter(year(Date) == 2018)
+mdf_2017 = mdf %>% filter(year(Date) == 2017)
+mdf_2018 = mdf %>% filter(year(Date) == 2018)
+
+```
+
+```{r}
+
+# Let us check the 
+price_points_2017 <- (ggplot(data = mdf_2017, aes(x=Date, y=value, group = variable, colour = variable)) + geom_line())
+price_points_2018 <- (ggplot(data = mdf_2018, aes(x=Date, y=value, group = variable, colour = variable)) + 
+                        geom_line() + 
+                        theme(legend.position = "bottom") + 
+                        ylab("Price $"))
+print(price_points_2018)
+```
+#### Let us ccheck for the year 2018 and understand the price points. 2018 year is selected because we have one yera of data. There are cases with price points is 0.  We will have to understand that.
+
+```{r}
+# Price Points 0
+price_less_than_1 <- hotel_reservation_data_EDA %>% filter(avg_price_per_room == 0)
+table(price_less_than_1$booking_cancellation)
+# so only few cases have been cancelled
+
+# Let us check the market segment that has price $0
+table(price_less_than_1$market_segment_type)
+```
+#### So what we can understand the market segment is either complementary or online. So selected customers could have some offers and have utilised the offer. hence $0 price point. Also, we don't see many cancellations, which also makes sense, whol would want to miss free booking. These are our thoughts.
+
+```{r}
+cancellation <- (ggplot(data = mdf_cancel_2018, aes(x = Date, y = value, fill = variable)) +
+                   geom_bar(stat = "identity") +
+                   labs(x = "Date", y = "Value", fill = "Variable") +
+                   scale_x_date(date_labels = "%Y-%m-%d", date_breaks = "1 month") +
+                   theme(legend.position = "bottom", axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 10)))
+
+print(cancellation)
+```
+We can see that there are many booking cancellations are during the months of September, October, Noveber.
 
 ##### Let us check the NA values
 
@@ -166,12 +254,17 @@ cat("Numeric columns: \n------\n", paste(categorized_features$numeric_cols, coll
 cat("Factor columns: \n------\n", paste(categorized_features$factor_cols, collapse = ", "), "\n")
 cat("Character columns: \n------\n", paste(categorized_features$character_cols, collapse = ", "),"\n")
 ```
+
 ```{r}
-# # Let us check the character variables and understand the unique values
-# for(col_val in categorized_features$character_cols) {
-#   cat(paste("-----", col_val, "-----\n", sep = ""))
-#   cat(paste(sort(unique(hotel_reservation_data[[col_val]]), decreasing = F), collapse = ", "), "\n")
-# }
+# Let us check the character variables and understand the unique values
+for(col_val in categorized_features$character_cols) {
+  cat(paste("-----", col_val, "-----\n", sep = ""))
+  if(col_val == "Booking_ID") {
+    print("Uniq Identifier - No need to check the unique values")
+  } else {
+    cat(paste(sort(unique(hotel_reservation_data[[col_val]]), decreasing = F), collapse = ", "), "\n")
+  }
+}
 ```
 
 
@@ -191,18 +284,7 @@ hotel_reservation_data$market_segment_type <- factor(hotel_reservation_data$mark
 hotel_reservation_data$type_of_meal_plan <- factor(hotel_reservation_data$type_of_meal_plan)
 hotel_reservation_data$room_type_reserved <- factor(hotel_reservation_data$room_type_reserved)
 
-# Since these are just variables
-# We are going to give life to it by assigneing various room types
-# CREDITS: https://hoteltechreport.com/news/room-type
-
-
-# c("Room_Type 1", "Room_Type 2", "Room_Type 3", "Room_Type 4", "Room_Type 5", "Room_Type 6", "Room_Type 7")
-# # c("standard_room", "deluxe_room", "joint_room", "connecting_room", "suite_room", "apartment_style_room", "accessible_room")
-
-
 ```
-
-
 
 ```{r}
 # Check the str
@@ -240,6 +322,54 @@ qualified_features_data <- assoc_num_df %>% rbind.data.frame(assoc_fac_df)
 qualified_features_data[order(qualified_features_data$result, decreasing = FALSE), ]
 ```
 
+#### We have some variables that are periodic in nature. Date, month, and day. I believe the better way to represent these variables is to map each value into a point in a circle where the lowest value appears next to the largest value in the circle.
+
+```{r}
+# Let us convert periodic columns
+circular_columns <- c("arrival_date", "arrival_month")
+
+
+for (col_val in circular_columns) {
+  
+  x_col_name <- paste(col_val, "_x", sep = "")
+  y_col_name <- paste(col_val, "_y", sep = "")
+  
+  hotel_reservation_data[[x_col_name]] <- cos((2 * pi * hotel_reservation_data[[col_val]]) / max(hotel_reservation_data[[col_val]]))
+  hotel_reservation_data[[y_col_name]] <- sin((2 * pi * hotel_reservation_data[[col_val]]) / max(hotel_reservation_data[[col_val]]))
+}
+
+# Removing the modified columns
+hotel_reservation_data <- hotel_reservation_data %>% select(-one_of(circular_columns))
+
+# Year column into factor
+hotel_reservation_data$arrival_year <- factor(hotel_reservation_data$arrival_year)
+```
+
+```{r}
+# Check the str
+str(hotel_reservation_data)
+```
+
+Let the outcome column be the final variable in the dataframe. Let sus chage its position.
+```{r}
+# Cahging the position of the outcome variable
+book_cancel <- hotel_reservation_data$booking_cancellation
+hotel_reservation_data$booking_cancellation <- NULL
+hotel_reservation_data$booking_cancellation <- book_cancel
+rm(book_cancel)
+```
+
+
+```{r}
+# Check the str
+str(hotel_reservation_data)
+
+categorized_features <- categorize_features(hotel_reservation_data)
+# Checking the column names
+cat("Numeric columns: \n------\n", paste(categorized_features$numeric_cols, collapse = ", "), "\n")
+cat("Factor columns: \n------\n", paste(categorized_features$factor_cols, collapse = ", "), "\n")
+cat("Character columns: \n------\n", paste(categorized_features$character_cols, collapse = ", "),"\n")
+```
 
 #### Let us get started with the modeling
 
@@ -324,31 +454,6 @@ auc_result
 conf_mat
 ```
 
-
-```{r}
-TP = 3391
-TN = 668
-FP = 492
-FN = 2656
-
-precision <- TP / (TP + FP)
-
-# Calculate Recall
-recall <- TP / (TP + FN)
-
-# Calculate F1 Score
-F1_score <- 2 * precision * recall / (precision + recall)
-
-# Print the results
-cat("Precision:", precision, "\n")
-cat("Recall:", recall, "\n")
-cat("F1 Score:", F1_score, "\n")
-```
-
-
-
-
-
 # Modeling
 
 ```{r}
@@ -356,8 +461,8 @@ cat("F1 Score:", F1_score, "\n")
 MODEL_LIST <- list()
 
 # Control Variables
-# MODEL_K_FOLDS <- 10
-MODEL_K_FOLDS <- 5
+MODEL_K_FOLDS <- 10
+# MODEL_K_FOLDS <- 5
 MODEL_CONTROL_METHOD <- "cv"
 # MODEL_TRAIN_METHOD <- "gbm"
 MODEL_METRIC <- "ROC"
@@ -383,38 +488,10 @@ control_values <- trainControl(method = MODEL_CONTROL_METHOD,
 ``` 
 
 
-
-
-```{r}
-# First model
-if(over_write_models) {
-  print("Running Model...")
-  
-  set.seed(1)
-  # Automatice Tuning / Not included hyper parmater values
-  grid_gbm <- expand.grid(
-    n.trees = c(50, 100, 150, 200),
-    shrinkage = c(0.01, 0.05, 0.1))
-  GRADIENT_BOOST_MODEL <- train(booking_cancellation ~ ., 
-                                data = MODEL_TRAIN_DATA, 
-                                method = "gbm", 
-                                weights = class_weights_vector,
-                                metric = MODEL_METRIC, 
-                                trControl = control_values,
-                                tuneGrid = grid_gbm,
-                                verbose = TRUE)
-  print(GRADIENT_BOOST_MODEL)
-  
-  # Savig the model objects for future use
-  MODEL_NAME <- "GRADIENT_BOOST_MODEL"; MODEL_LIST[[MODEL_NAME]] <- GRADIENT_BOOST_MODEL;
-  saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
-}
-
-```
-
-
 ```{r}
 if(over_write_models) {
+  start_time <- Sys.time()
+  print("##########--------------------LASSO LOGISTIC REGRESSION--------------------##########")
   print("Running Model...")
   
   set.seed(1)
@@ -433,34 +510,34 @@ if(over_write_models) {
                        verbose = TRUE)
   
   # print(LASSO_MODEL)
-  # print(coef(LASSO_MODEL$finalModel, LASSO_MODEL$bestTune$lambda))
+  print(coef(LASSO_MODEL$finalModel, LASSO_MODEL$bestTune$lambda))
   
   # Savig the model objects for future use
   MODEL_NAME <- "LASSO_MODEL"; MODEL_LIST[[MODEL_NAME]] <- LASSO_MODEL;
   saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
+  
+  # End time
+  end_time <- Sys.time()
+  time_difference_minutes <- as.numeric(difftime(end_time, start_time, units = "mins"))
+  print(time_difference_minutes)
 }
 
 ```
 
-```{r}
-# gbm_predictions_prob = predict(m_weighted_gbm, MODEL_TEST_DATA, type="prob")
-# gbm_predictions = prediction(predictions = gbm_predictions_prob$yes, MODEL_TEST_DATA$booking_cancellation)
-# 
-# performance(gbm_predictions, measure = "auc")@y.values
-# 
-# gbm_predicted_labels = predict(m_weighted_gbm, MODEL_TEST_DATA)
-# confusionMatrix(gbm_predicted_labels, MODEL_TEST_DATA$booking_cancellation, positive="yes", mode="everything")
-```
 
 ```{r}
-# Third MOdel - RF Model
+# 2nd MOdel MOdel - RF Model
 # Descision tree is sensitive class imbalance
 # Resusing the codes from the lectures
+if(over_write_models) {
+  start_time <- Sys.time()
+  print("##########--------------------RANDOM FOREST--------------------##########")
+  print("Running Model...")
+
 set.seed(1)
 
-# ctrl <- trainControl(method = "cv", number = 10)
-grid_rf <- expand.grid(mtry= c(2))
-# grid_rf <- expand.grid(mtry= c(2, 4, 8))
+# grid_rf <- expand.grid(mtry= c(2))
+grid_rf <- expand.grid(mtry= c(2, 4, 8))
 
 RANDOM_FOREST_MODEL <- train(  booking_cancellation ~.,
                                data = MODEL_TRAIN_DATA,
@@ -477,6 +554,13 @@ print(RANDOM_FOREST_MODEL)
 # Savig the model objects for future use
 MODEL_NAME <- "RANDOM_FOREST_MODEL"; MODEL_LIST[[MODEL_NAME]] <- RANDOM_FOREST_MODEL;
 saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
+
+# End time
+  end_time <- Sys.time()
+  time_difference_minutes <- as.numeric(difftime(end_time, start_time, units = "mins"))
+  print(time_difference_minutes)
+
+}
 
 ```
 
@@ -497,8 +581,58 @@ while (!is.null(dev.list()))  dev.off()
 
 
 ```{r}
+# First model
+if(over_write_models) {
+  
+  start_time <- Sys.time()
+  print("##########--------------------GRADIENT BOOST--------------------##########")
+  print("Running Model...")
+  
+  set.seed(1)
+  # Automatice Tuning
+  GRADIENT_BOOST_MODEL <- train(booking_cancellation ~ ., 
+                                data = MODEL_TRAIN_DATA, 
+                                method = "gbm", 
+                                weights = class_weights_vector,
+                                metric = MODEL_METRIC, 
+                                trControl = control_values,
+                                verbose = TRUE)
+  print(GRADIENT_BOOST_MODEL)
+  
+  # Savig the model objects for future use
+  MODEL_NAME <- "GRADIENT_BOOST_MODEL"; MODEL_LIST[[MODEL_NAME]] <- GRADIENT_BOOST_MODEL;
+  saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
+  
+  
+  # End time
+  end_time <- Sys.time()
+  time_difference_minutes <- as.numeric(difftime(end_time, start_time, units = "mins"))
+  print(time_difference_minutes)
+}
+```
+
+
+
+```{r}
+# gbm_predictions_prob = predict(m_weighted_gbm, MODEL_TEST_DATA, type="prob")
+# gbm_predictions = prediction(predictions = gbm_predictions_prob$yes, MODEL_TEST_DATA$booking_cancellation)
+# 
+# performance(gbm_predictions, measure = "auc")@y.values
+# 
+# gbm_predicted_labels = predict(m_weighted_gbm, MODEL_TEST_DATA)
+# confusionMatrix(gbm_predicted_labels, MODEL_TEST_DATA$booking_cancellation, positive="yes", mode="everything")
+```
+
+
+
+```{r}
 # Fourth Model
 # Set seed - for reproducibility
+if(over_write_models) {
+  
+  start_time <- Sys.time()
+  print("##########--------------------SVM LINEAR--------------------##########")
+  print("Running Model...")
 set.seed(1)
 
 # Define Train Control for SVM
@@ -511,7 +645,7 @@ train_control_SVM <- trainControl(method = MODEL_CONTROL_METHOD,
 
 # Set Up MOdel
 
-grid_svm <- expand.grid(C = c(.5, 1, 3, 5))
+grid_svm <- expand.grid(C = c(0.25, 0.5, 1))
 
 SVM_LINEAR_MODEL <- train( booking_cancellation ~.,
                            data = MODEL_TRAIN_DATA,
@@ -525,24 +659,91 @@ SVM_LINEAR_MODEL <- train( booking_cancellation ~.,
 
 # print(SVM_LINEAR_MODEL)
 
+# Savig the model objects for future use
+  MODEL_NAME <- "SVM_LINEAR_MODEL"; MODEL_LIST[[MODEL_NAME]] <- SVM_LINEAR_MODEL;
+  saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
+
+# End time
+  end_time <- Sys.time()
+  time_difference_minutes <- as.numeric(difftime(end_time, start_time, units = "mins"))
+  print(time_difference_minutes)
+}
 
 ```
 
 ```{r}
-# # Pausing ----
-# Models Evaluation
-for(model_select in names(MODEL_LIST)) {
-  cat(paste("####-----",model_select,"-----####\n", sep = ""))
-  print(classification_evaluation_fn(model_selected_var = MODEL_LIST[[model_select]],
-                                   test_data_selected = MODEL_TEST_DATA,
-                                   focus_outcome = MODEL_DV_VAR))
+# Fourth Model - SVM RADIAL
+# Set seed - for reproducibility
+if(over_write_models) {
+  
+  start_time <- Sys.time()
+  print("##########--------------------SVM RADIAL--------------------##########")
+  print("Running Model...")
+set.seed(1)
+
+# Define Train Control for SVM
+train_control_SVM <- trainControl(method = MODEL_CONTROL_METHOD, 
+                              number = MODEL_K_FOLDS, 
+                              classProbs = TRUE, 
+                              summaryFunction = twoClassSummary, 
+                              preProc = c("center", "scale"),
+                              verboseIter = TRUE)
+
+# Set Up MOdel - Auto Tuning
+SVM_RADIAL_MODEL <- train( booking_cancellation ~.,
+                           data = MODEL_TRAIN_DATA,
+                           method = "svmRadial",
+                           weights = class_weights_vector,
+                           metric = MODEL_METRIC,
+                           trControl = train_control_SVM,
+                           verboseIter = TRUE,
+                           verbose = TRUE)
+
+# print(SVM_RADIAL_MODEL)
+
+# Savig the model objects for future use
+  MODEL_NAME <- "SVM_RADIAL_MODEL"; MODEL_LIST[[MODEL_NAME]] <- SVM_RADIAL_MODEL;
+  saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
+
+# End time
+  end_time <- Sys.time()
+  time_difference_minutes <- as.numeric(difftime(end_time, start_time, units = "mins"))
+  print(time_difference_minutes)
 }
-# print(classification_evaluation_fn(model_selected_var = m_weighted_gbm,
-#                                    test_data_selected = MODEL_TEST_DATA,
-#                                    focus_outcome = MODEL_DV_VAR))
 
 ```
 
+
+```{r}
+# # Pausing ----
+MODEL_LIST <- list("LASSO_MODEL" = LASSO_MODEL 
+                   ,"RANDOM_FOREST_MODEL" = RANDOM_FOREST_MODEL,
+                   "GRADIENT_BOOST_MODEL" = GRADIENT_BOOST_MODEL,
+                   "SVM_LINEAR_MODEL" = SVM_LINEAR_MODEL,
+                   "SVM_RADIAL_MODEL" = SVM_RADIAL_MODEL
+                   )
+models_evaluation_data <- data.frame()
+# Models Evaluation
+for(model_select in names(MODEL_LIST)) {
+  cat(paste("####-----",model_select,"-----####\n", sep = ""))
+  model_eval_res <- (classification_evaluation_fn(model_selected_var = MODEL_LIST[[model_select]],
+                                                       test_data_selected = MODEL_TEST_DATA,
+                                                       focus_outcome = MODEL_DV_VAR))
+  interim_data <- data.frame(
+    Model_Name = model_select,
+    AUC_Value = model_eval_res$AUC_Value,
+    Accuracy = model_eval_res$Confusion_Matrix$overall[["Accuracy"]]
+  )
+  models_evaluation_data <- rbind(interim_data, models_evaluation_data)
+  
+    
+}
+
+models_evaluation_data <- models_evaluation_data %>% arrange(desc(AUC_Value), desc(Accuracy))
+```
+
+
+# NN MOdeling
 #### Let us construct the NN for this model
 ```{r}
 # Let us first perfrorm necessary transformation
@@ -578,7 +779,7 @@ hotel_reservation_data_combined_2$booking_cancellation <- (
 #          hotel_reservation_data_combined_2[[MODEL_DV_VAR]]))
 
 
-str(hotel_reservation_data_combined_2)
+# str(hotel_reservation_data_combined_2)
 ```
 
 
@@ -656,7 +857,7 @@ val_IDV <- as.matrix(hotel_reservation_data_NN_train_val %>% select(-one_of(c(MO
 val_DV <- hotel_reservation_data_NN_train_val[, MODEL_DV_VAR]
 ```
 
-#### Let us create a simple model first and move on to construcutig tuned model
+#### Let us create a simple model first and move on to construcutig tuned model, without the class weights and understand the model
 
 ```{r}
 set.seed(1)
@@ -664,9 +865,9 @@ set.seed(1)
 # Simple Model
 simple_model <- (
   keras_model_sequential() %>%
-    layer_dense(units = 16, activation = "sigmoid", input_shape = dim(train_IDV)[2]) %>%
+    layer_dense(units = 32, activation = "sigmoid", input_shape = dim(train_IDV)[2]) %>%
     layer_dropout(rate = 0.1) %>%
-    layer_dense(units = 16, activation = "sigmoid") %>%
+    layer_dense(units = 32, activation = "sigmoid") %>%
     layer_dropout(rate = 0.1) %>%
     layer_dense(units =  1, activation = "sigmoid")
 )
@@ -685,9 +886,11 @@ history <- simple_model %>% fit(
   epochs = 10,
   batch_size = 16, 
   validation_data = list(val_IDV, val_DV),
-  class_weight = list("0" = class_weights_values$weight_no, "1" = class_weights_values$weight_yes),
+  
   verbose = 1
 )
+
+# class_weight = list("0" = class_weights_values$weight_no, "1" = class_weights_values$weight_yes),
 
 history
 
@@ -708,13 +911,11 @@ The above model does not seem to satify our expectations, so let us contruct a b
 # Just using small values
 # Running it on my local machine
 tuning_path = "D:/UIS/Studies/Semester4/CSC532/Assignments/ML_Final_Project/ml_final_project/code_base/final_project_tuning.R"
-# nodes_list = c(64, 128, 256, 392, 512, 1024)
-nodes_list = c(8)
-learning_rates_list = c(0.01, 0.05, 0.001)#, 0.005)
-# batch_size_list = c(16, 32, 64, 128)
-batch_size_list = c(8)
-activations_list = c( "sigmoid")#,  "relu", "tanh")
-sample_perc = 0.01
+nodes_list = c(64, 128, 256, 392, 512)
+learning_rates_list = c(0.01, 0.05, 0.001, 0.005)
+batch_size_list = c(16, 32, 64, 128)
+activations_list = c( "sigmoid",  "relu", "tanh")
+sample_perc = 0.03
 
 # Performing tUNED NN
 runs <- tuning_run(tuning_path,
@@ -741,16 +942,7 @@ as.data.frame(runs)
 view_run(runs$run_dir[1])
 ```
 
-```{r}
-# Saving runs for future use
-# class(runs)
-# MODEL_NAME <- "NEURAL_NETWORK"; MODEL_LIST[[MODEL_NAME]] <- LASSO_MODEL;
-# saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
-runs_save_file_name = paste("NN_RUNS_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv", sep = "")
-runs_save_file_name = paste(models_folder_path,"/", runs_save_file_name, sep = "")
-write.csv(runs, file = runs_save_file_name, row.names = FALSE)
-print(paste(runs_save_file_name, " - file saved"))
-```
+
 
 ```{r}
 # Let us conctaente the val and train datasets
@@ -766,11 +958,11 @@ Let us perform the final model (neural networks)
 ```{r}
 # Tunedd Parameters Values
 final_tuned_params <- list(
-  "nodes" = 8,
-  "batch_size" = 8,
+  "nodes" = 256,
+  "batch_size" = 64,
   "activation" = "sigmoid",
   "learning_rate" = 0.01,
-  "epochs" = 10
+  "epochs" = 30
 )
 
 ```
@@ -809,12 +1001,48 @@ final_model %>% evaluate(test_IDV, test_DV)
 ```
 
 ```{r}
+MODEL_NAME <- "NEURAL_NETWORK_MODEL"; MODEL_LIST[[MODEL_NAME]] <- final_model;
+saveRDS(MODEL_LIST[[MODEL_NAME]], file = paste(models_folder_path,"/", MODEL_NAME,"_MODEL.rds",sep = ""))
+
+runs_save_file_path = paste(models_folder_path, "/", sep = "")
+runs_save_file_name = paste("NN_RUNS_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv", sep = "")
+runs_save_file_name = paste(runs_save_file_path, runs_save_file_name, sep = "")
+write.csv(runs, file = runs_save_file_name, row.names = FALSE)
+print(paste(runs_save_file_name, " - file saved"))
+```
+
+
+```{r}
 predicted_probs = final_model %>% predict(test_IDV)
 ann_predictions = prediction(predicted_probs, test_DV)
 
-performance(ann_predictions, measure = "auc")@y.values
+auc_value <- performance(ann_predictions, measure = "auc")@y.values[[1]]
 
 predicted.labels= factor(ifelse(predicted_probs>0.5, "1", "0"))
-confusionMatrix(predicted.labels, as.factor(test_DV), mode="everything", positive="1")
+conf_mat_NN <- confusionMatrix(predicted.labels, as.factor(test_DV), mode="everything", positive="1")
+```
+
+```{r}
+interim_data <- data.frame(
+  Model_Name = "NEURAL_NETWORK",
+  AUC_Value = auc_value,
+  Accuracy = conf_mat_NN$overall[["Accuracy"]]
+)
+
+models_evaluation_data <- rbind(models_evaluation_data, interim_data)
+models_evaluation_data <- models_evaluation_data %>% arrange(desc(AUC_Value), desc(Accuracy))
+
+```
+
+Fianl Model Check
+```{r}
+# Pringting the best model
+print(classification_evaluation_fn(model_selected_var = RANDOM_FOREST_MODEL,
+                              test_data_selected = MODEL_TEST_DATA,
+                                                       focus_outcome = MODEL_DV_VAR))
+```
+
+```{r}
+v
 ```
 

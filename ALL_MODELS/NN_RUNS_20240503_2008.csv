@@ -1,0 +1,361 @@
+"run_dir","metric_loss","metric_accuracy","metric_val_loss","metric_val_accuracy","flag_nodes","flag_batch_size","flag_activation","flag_learning_rate","epochs","epochs_completed","metrics","model","loss_function","optimizer","learning_rate","script","start","end","completed","output","source_code","context","type"
+"runs/2024-05-04T00-15-28Z",0.3593,0.8359,0.3283,0.8398,256,64,"sigmoid",0.01,30,30,"runs/2024-05-04T00-15-28Z/tfruns.d/metrics.json","Model: ""sequential""
+________________________________________________________________________________
+ Layer (type)                       Output Shape                    Param #     
+================================================================================
+ dense_3 (Dense)                    (None, 256)                     8704        
+ dropout_2 (Dropout)                (None, 256)                     0           
+ dense_2 (Dense)                    (None, 256)                     65792       
+ dropout_1 (Dropout)                (None, 256)                     0           
+ dense_1 (Dense)                    (None, 256)                     65792       
+ dropout (Dropout)                  (None, 256)                     0           
+ dense (Dense)                      (None, 1)                       257         
+================================================================================
+Total params: 140545 (549.00 KB)
+Trainable params: 140545 (549.00 KB)
+Non-trainable params: 0 (0.00 Byte)
+________________________________________________________________________________","binary_crossentropy","<keras.src.optimizers.adam.Adam object at 0x000002088F24B0D0>",0.00999999977648258,"final_project_tuning.R",2024-05-04 00:15:31,2024-05-04 00:17:36,TRUE,"
+> ###-----HYPER PARAMETER TUNING-----###
+> # Reusing code chunks from the lecture notes
+> 
+> # Setting up data sets
+> data_dict <- list(
++   ""train_id ..."" ... [TRUNCATED] 
+
+> # Setting up the flaGs
+> FLAGS <- flags(
++   flag_numeric(""nodes"", 512),
++   flag_numeric(""batch_size"", 32),
++   flag_string(""activation"", ""sigmoid"" .... [TRUNCATED] 
+
+> # # We are not implementing Early Stopping as it can cause over fitting
+> # # Implementing Early Stopping
+> # callbacks <- list(callback_early_stopp .... [TRUNCATED] 
+
+> tuning_model %>%
++   layer_dense(units = FLAGS$nodes, activation = FLAGS$activation, input_shape = dim(data_dict$train_idv)[2]) %>%
++   layer_dropou .... [TRUNCATED] 
+
+> tuning_model %>% compile(optimizer = optimizer_adam(learning_rate = FLAGS$learning_rate),
++                          loss = 'binary_crossentropy',
++ .... [TRUNCATED] 
+
+> tuning_model %>% fit(data_dict$train_idv,
++                      data_dict$train_dv,
++                      batch_size = FLAGS$batch_size,
++         .... [TRUNCATED] ","runs/2024-05-04T00-15-28Z/tfruns.d/source.tar.gz","local","training"
+"runs/2024-05-04T00-17-36Z",0.3781,0.8272,0.3643,0.8346,392,16,"sigmoid",0.001,30,30,"runs/2024-05-04T00-17-36Z/tfruns.d/metrics.json","Model: ""sequential""
+________________________________________________________________________________
+ Layer (type)                       Output Shape                    Param #     
+================================================================================
+ dense_3 (Dense)                    (None, 392)                     13328       
+ dropout_2 (Dropout)                (None, 392)                     0           
+ dense_2 (Dense)                    (None, 392)                     154056      
+ dropout_1 (Dropout)                (None, 392)                     0           
+ dense_1 (Dense)                    (None, 392)                     154056      
+ dropout (Dropout)                  (None, 392)                     0           
+ dense (Dense)                      (None, 1)                       393         
+================================================================================
+Total params: 321833 (1.23 MB)
+Trainable params: 321833 (1.23 MB)
+Non-trainable params: 0 (0.00 Byte)
+________________________________________________________________________________","binary_crossentropy","<keras.src.optimizers.adam.Adam object at 0x000002089DFF49D0>",0.00100000004749745,"final_project_tuning.R",2024-05-04 00:17:36,2024-05-04 00:24:58,TRUE,"
+> ###-----HYPER PARAMETER TUNING-----###
+> # Reusing code chunks from the lecture notes
+> 
+> # Setting up data sets
+> data_dict <- list(
++   ""train_id ..."" ... [TRUNCATED] 
+
+> # Setting up the flaGs
+> FLAGS <- flags(
++   flag_numeric(""nodes"", 512),
++   flag_numeric(""batch_size"", 32),
++   flag_string(""activation"", ""sigmoid"" .... [TRUNCATED] 
+
+> # # We are not implementing Early Stopping as it can cause over fitting
+> # # Implementing Early Stopping
+> # callbacks <- list(callback_early_stopp .... [TRUNCATED] 
+
+> tuning_model %>%
++   layer_dense(units = FLAGS$nodes, activation = FLAGS$activation, input_shape = dim(data_dict$train_idv)[2]) %>%
++   layer_dropou .... [TRUNCATED] 
+
+> tuning_model %>% compile(optimizer = optimizer_adam(learning_rate = FLAGS$learning_rate),
++                          loss = 'binary_crossentropy',
++ .... [TRUNCATED] 
+
+> tuning_model %>% fit(data_dict$train_idv,
++                      data_dict$train_dv,
++                      batch_size = FLAGS$batch_size,
++         .... [TRUNCATED] ","runs/2024-05-04T00-17-36Z/tfruns.d/source.tar.gz","local","training"
+"runs/2024-05-03T23-59-00Z",0.7154,0.5,0.6465,0.6716,256,128,"sigmoid",0.05,30,30,"runs/2024-05-03T23-59-00Z/tfruns.d/metrics.json","Model: ""sequential_2""
+________________________________________________________________________________
+ Layer (type)                       Output Shape                    Param #     
+================================================================================
+ dense_9 (Dense)                    (None, 256)                     8704        
+ dropout_6 (Dropout)                (None, 256)                     0           
+ dense_8 (Dense)                    (None, 256)                     65792       
+ dropout_5 (Dropout)                (None, 256)                     0           
+ dense_7 (Dense)                    (None, 256)                     65792       
+ dropout_4 (Dropout)                (None, 256)                     0           
+ dense_6 (Dense)                    (None, 1)                       257         
+================================================================================
+Total params: 140545 (549.00 KB)
+Trainable params: 140545 (549.00 KB)
+Non-trainable params: 0 (0.00 Byte)
+________________________________________________________________________________","binary_crossentropy","<keras.src.optimizers.adam.Adam object at 0x00000208801698D0>",0.0500000007450581,"final_project_tuning.R",2024-05-03 23:59:03,2024-05-04 00:00:40,TRUE,"
+> ###-----HYPER PARAMETER TUNING-----###
+> # Reusing code chunks from the lecture notes
+> 
+> # Setting up data sets
+> data_dict <- list(
++   ""train_id ..."" ... [TRUNCATED] 
+
+> # Setting up the flaGs
+> FLAGS <- flags(
++   flag_numeric(""nodes"", 512),
++   flag_numeric(""batch_size"", 32),
++   flag_string(""activation"", ""sigmoid"" .... [TRUNCATED] 
+
+> # # We are not implementing Early Stopping as it can cause over fitting
+> # # Implementing Early Stopping
+> # callbacks <- list(callback_early_stopp .... [TRUNCATED] 
+
+> tuning_model %>%
++   layer_dense(units = FLAGS$nodes, activation = FLAGS$activation, input_shape = dim(data_dict$train_idv)[2]) %>%
++   layer_dropou .... [TRUNCATED] 
+
+> tuning_model %>% compile(optimizer = optimizer_adam(learning_rate = FLAGS$learning_rate),
++                          loss = 'binary_crossentropy',
++ .... [TRUNCATED] 
+
+> tuning_model %>% fit(data_dict$train_idv,
++                      data_dict$train_dv,
++                      batch_size = FLAGS$batch_size,
++         .... [TRUNCATED] ","runs/2024-05-03T23-59-00Z/tfruns.d/source.tar.gz","local","training"
+"runs/2024-05-04T00-10-43Z",1.5665,0.6999,2.2415,0.6474,512,64,"tanh",0.001,30,30,"runs/2024-05-04T00-10-43Z/tfruns.d/metrics.json","Model: ""sequential""
+________________________________________________________________________________
+ Layer (type)                       Output Shape                    Param #     
+================================================================================
+ dense_3 (Dense)                    (None, 512)                     17408       
+ dropout_2 (Dropout)                (None, 512)                     0           
+ dense_2 (Dense)                    (None, 512)                     262656      
+ dropout_1 (Dropout)                (None, 512)                     0           
+ dense_1 (Dense)                    (None, 512)                     262656      
+ dropout (Dropout)                  (None, 512)                     0           
+ dense (Dense)                      (None, 1)                       513         
+================================================================================
+Total params: 543233 (2.07 MB)
+Trainable params: 543233 (2.07 MB)
+Non-trainable params: 0 (0.00 Byte)
+________________________________________________________________________________","binary_crossentropy","<keras.src.optimizers.adam.Adam object at 0x000002089679EFD0>",0.00100000004749745,"final_project_tuning.R",2024-05-04 00:10:43,2024-05-04 00:15:27,TRUE,"
+> ###-----HYPER PARAMETER TUNING-----###
+> # Reusing code chunks from the lecture notes
+> 
+> # Setting up data sets
+> data_dict <- list(
++   ""train_id ..."" ... [TRUNCATED] 
+
+> # Setting up the flaGs
+> FLAGS <- flags(
++   flag_numeric(""nodes"", 512),
++   flag_numeric(""batch_size"", 32),
++   flag_string(""activation"", ""sigmoid"" .... [TRUNCATED] 
+
+> # # We are not implementing Early Stopping as it can cause over fitting
+> # # Implementing Early Stopping
+> # callbacks <- list(callback_early_stopp .... [TRUNCATED] 
+
+> tuning_model %>%
++   layer_dense(units = FLAGS$nodes, activation = FLAGS$activation, input_shape = dim(data_dict$train_idv)[2]) %>%
++   layer_dropou .... [TRUNCATED] 
+
+> tuning_model %>% compile(optimizer = optimizer_adam(learning_rate = FLAGS$learning_rate),
++                          loss = 'binary_crossentropy',
++ .... [TRUNCATED] 
+
+> tuning_model %>% fit(data_dict$train_idv,
++                      data_dict$train_dv,
++                      batch_size = FLAGS$batch_size,
++         .... [TRUNCATED] ","runs/2024-05-04T00-10-43Z/tfruns.d/source.tar.gz","local","training"
+"runs/2024-05-04T00-07-04Z",6.2246,0.7202,4.2131,0.7252,128,16,"tanh",0.01,30,30,"runs/2024-05-04T00-07-04Z/tfruns.d/metrics.json","Model: ""sequential""
+________________________________________________________________________________
+ Layer (type)                       Output Shape                    Param #     
+================================================================================
+ dense_3 (Dense)                    (None, 128)                     4352        
+ dropout_2 (Dropout)                (None, 128)                     0           
+ dense_2 (Dense)                    (None, 128)                     16512       
+ dropout_1 (Dropout)                (None, 128)                     0           
+ dense_1 (Dense)                    (None, 128)                     16512       
+ dropout (Dropout)                  (None, 128)                     0           
+ dense (Dense)                      (None, 1)                       129         
+================================================================================
+Total params: 37505 (146.50 KB)
+Trainable params: 37505 (146.50 KB)
+Non-trainable params: 0 (0.00 Byte)
+________________________________________________________________________________","binary_crossentropy","<keras.src.optimizers.adam.Adam object at 0x00000208808A1C90>",0.00999999977648258,"final_project_tuning.R",2024-05-04 00:07:05,2024-05-04 00:10:42,TRUE,"
+> ###-----HYPER PARAMETER TUNING-----###
+> # Reusing code chunks from the lecture notes
+> 
+> # Setting up data sets
+> data_dict <- list(
++   ""train_id ..."" ... [TRUNCATED] 
+
+> # Setting up the flaGs
+> FLAGS <- flags(
++   flag_numeric(""nodes"", 512),
++   flag_numeric(""batch_size"", 32),
++   flag_string(""activation"", ""sigmoid"" .... [TRUNCATED] 
+
+> # # We are not implementing Early Stopping as it can cause over fitting
+> # # Implementing Early Stopping
+> # callbacks <- list(callback_early_stopp .... [TRUNCATED] 
+
+> tuning_model %>%
++   layer_dense(units = FLAGS$nodes, activation = FLAGS$activation, input_shape = dim(data_dict$train_idv)[2]) %>%
++   layer_dropou .... [TRUNCATED] 
+
+> tuning_model %>% compile(optimizer = optimizer_adam(learning_rate = FLAGS$learning_rate),
++                          loss = 'binary_crossentropy',
++ .... [TRUNCATED] 
+
+> tuning_model %>% fit(data_dict$train_idv,
++                      data_dict$train_dv,
++                      batch_size = FLAGS$batch_size,
++         .... [TRUNCATED] ","runs/2024-05-04T00-07-04Z/tfruns.d/source.tar.gz","local","training"
+"runs/2024-05-04T00-24-59Z",7.7147,0.6706,5.066,0.6716,512,64,"tanh",0.05,30,30,"runs/2024-05-04T00-24-59Z/tfruns.d/metrics.json","Model: ""sequential""
+________________________________________________________________________________
+ Layer (type)                       Output Shape                    Param #     
+================================================================================
+ dense_3 (Dense)                    (None, 512)                     17408       
+ dropout_2 (Dropout)                (None, 512)                     0           
+ dense_2 (Dense)                    (None, 512)                     262656      
+ dropout_1 (Dropout)                (None, 512)                     0           
+ dense_1 (Dense)                    (None, 512)                     262656      
+ dropout (Dropout)                  (None, 512)                     0           
+ dense (Dense)                      (None, 1)                       513         
+================================================================================
+Total params: 543233 (2.07 MB)
+Trainable params: 543233 (2.07 MB)
+Non-trainable params: 0 (0.00 Byte)
+________________________________________________________________________________","binary_crossentropy","<keras.src.optimizers.adam.Adam object at 0x00000208B7C1C910>",0.0500000007450581,"final_project_tuning.R",2024-05-04 00:24:59,2024-05-04 00:29:35,TRUE,"
+> ###-----HYPER PARAMETER TUNING-----###
+> # Reusing code chunks from the lecture notes
+> 
+> # Setting up data sets
+> data_dict <- list(
++   ""train_id ..."" ... [TRUNCATED] 
+
+> # Setting up the flaGs
+> FLAGS <- flags(
++   flag_numeric(""nodes"", 512),
++   flag_numeric(""batch_size"", 32),
++   flag_string(""activation"", ""sigmoid"" .... [TRUNCATED] 
+
+> # # We are not implementing Early Stopping as it can cause over fitting
+> # # Implementing Early Stopping
+> # callbacks <- list(callback_early_stopp .... [TRUNCATED] 
+
+> tuning_model %>%
++   layer_dense(units = FLAGS$nodes, activation = FLAGS$activation, input_shape = dim(data_dict$train_idv)[2]) %>%
++   layer_dropou .... [TRUNCATED] 
+
+> tuning_model %>% compile(optimizer = optimizer_adam(learning_rate = FLAGS$learning_rate),
++                          loss = 'binary_crossentropy',
++ .... [TRUNCATED] 
+
+> tuning_model %>% fit(data_dict$train_idv,
++                      data_dict$train_dv,
++                      batch_size = FLAGS$batch_size,
++         .... [TRUNCATED] ","runs/2024-05-04T00-24-59Z/tfruns.d/source.tar.gz","local","training"
+"runs/2024-05-04T00-00-40Z",7.7162,0.6717,5.066,0.6716,128,16,"tanh",0.05,30,30,"runs/2024-05-04T00-00-40Z/tfruns.d/metrics.json","Model: ""sequential""
+________________________________________________________________________________
+ Layer (type)                       Output Shape                    Param #     
+================================================================================
+ dense_3 (Dense)                    (None, 128)                     4352        
+ dropout_2 (Dropout)                (None, 128)                     0           
+ dense_2 (Dense)                    (None, 128)                     16512       
+ dropout_1 (Dropout)                (None, 128)                     0           
+ dense_1 (Dense)                    (None, 128)                     16512       
+ dropout (Dropout)                  (None, 128)                     0           
+ dense (Dense)                      (None, 1)                       129         
+================================================================================
+Total params: 37505 (146.50 KB)
+Trainable params: 37505 (146.50 KB)
+Non-trainable params: 0 (0.00 Byte)
+________________________________________________________________________________","binary_crossentropy","<keras.src.optimizers.adam.Adam object at 0x000002084A48CCD0>",0.0500000007450581,"final_project_tuning.R",2024-05-04 00:00:42,2024-05-04 00:04:28,TRUE,"
+> ###-----HYPER PARAMETER TUNING-----###
+> # Reusing code chunks from the lecture notes
+> 
+> # Setting up data sets
+> data_dict <- list(
++   ""train_id ..."" ... [TRUNCATED] 
+
+> # Setting up the flaGs
+> FLAGS <- flags(
++   flag_numeric(""nodes"", 512),
++   flag_numeric(""batch_size"", 32),
++   flag_string(""activation"", ""sigmoid"" .... [TRUNCATED] 
+
+> # # We are not implementing Early Stopping as it can cause over fitting
+> # # Implementing Early Stopping
+> # callbacks <- list(callback_early_stopp .... [TRUNCATED] 
+
+> tuning_model %>%
++   layer_dense(units = FLAGS$nodes, activation = FLAGS$activation, input_shape = dim(data_dict$train_idv)[2]) %>%
++   layer_dropou .... [TRUNCATED] 
+
+> tuning_model %>% compile(optimizer = optimizer_adam(learning_rate = FLAGS$learning_rate),
++                          loss = 'binary_crossentropy',
++ .... [TRUNCATED] 
+
+> tuning_model %>% fit(data_dict$train_idv,
++                      data_dict$train_dv,
++                      batch_size = FLAGS$batch_size,
++         .... [TRUNCATED] ","runs/2024-05-04T00-00-40Z/tfruns.d/source.tar.gz","local","training"
+"runs/2024-05-04T00-04-29Z",7.6256,0.3276,10.2409,0.3284,392,64,"relu",0.05,30,30,"runs/2024-05-04T00-04-29Z/tfruns.d/metrics.json","Model: ""sequential""
+________________________________________________________________________________
+ Layer (type)                       Output Shape                    Param #     
+================================================================================
+ dense_3 (Dense)                    (None, 392)                     13328       
+ dropout_2 (Dropout)                (None, 392)                     0           
+ dense_2 (Dense)                    (None, 392)                     154056      
+ dropout_1 (Dropout)                (None, 392)                     0           
+ dense_1 (Dense)                    (None, 392)                     154056      
+ dropout (Dropout)                  (None, 392)                     0           
+ dense (Dense)                      (None, 1)                       393         
+================================================================================
+Total params: 321833 (1.23 MB)
+Trainable params: 321833 (1.23 MB)
+Non-trainable params: 0 (0.00 Byte)
+________________________________________________________________________________","binary_crossentropy","<keras.src.optimizers.adam.Adam object at 0x0000020889AE4850>",0.0500000007450581,"final_project_tuning.R",2024-05-04 00:04:30,2024-05-04 00:07:04,TRUE,"
+> ###-----HYPER PARAMETER TUNING-----###
+> # Reusing code chunks from the lecture notes
+> 
+> # Setting up data sets
+> data_dict <- list(
++   ""train_id ..."" ... [TRUNCATED] 
+
+> # Setting up the flaGs
+> FLAGS <- flags(
++   flag_numeric(""nodes"", 512),
++   flag_numeric(""batch_size"", 32),
++   flag_string(""activation"", ""sigmoid"" .... [TRUNCATED] 
+
+> # # We are not implementing Early Stopping as it can cause over fitting
+> # # Implementing Early Stopping
+> # callbacks <- list(callback_early_stopp .... [TRUNCATED] 
+
+> tuning_model %>%
++   layer_dense(units = FLAGS$nodes, activation = FLAGS$activation, input_shape = dim(data_dict$train_idv)[2]) %>%
++   layer_dropou .... [TRUNCATED] 
+
+> tuning_model %>% compile(optimizer = optimizer_adam(learning_rate = FLAGS$learning_rate),
++                          loss = 'binary_crossentropy',
++ .... [TRUNCATED] 
+
+> tuning_model %>% fit(data_dict$train_idv,
++                      data_dict$train_dv,
++                      batch_size = FLAGS$batch_size,
++         .... [TRUNCATED] ","runs/2024-05-04T00-04-29Z/tfruns.d/source.tar.gz","local","training"
