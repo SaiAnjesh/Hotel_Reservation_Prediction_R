@@ -1,6 +1,6 @@
 ---
 title: "Final Project"
-author: "Sai Anjesh"
+author: "Sai Anjesh, Aditya"
 date: "2024-04-16"
 output: html_notebook
 ---
@@ -613,17 +613,6 @@ if(over_write_models) {
 
 
 
-```{r}
-# gbm_predictions_prob = predict(m_weighted_gbm, MODEL_TEST_DATA, type="prob")
-# gbm_predictions = prediction(predictions = gbm_predictions_prob$yes, MODEL_TEST_DATA$booking_cancellation)
-# 
-# performance(gbm_predictions, measure = "auc")@y.values
-# 
-# gbm_predicted_labels = predict(m_weighted_gbm, MODEL_TEST_DATA)
-# confusionMatrix(gbm_predicted_labels, MODEL_TEST_DATA$booking_cancellation, positive="yes", mode="everything")
-```
-
-
 
 ```{r}
 # Fourth Model
@@ -714,8 +703,11 @@ SVM_RADIAL_MODEL <- train( booking_cancellation ~.,
 ```
 
 
+
+
+
 ```{r}
-# # Pausing ----
+# # Use this line if you are just loading Model Objects manually
 MODEL_LIST <- list("LASSO_MODEL" = LASSO_MODEL 
                    ,"RANDOM_FOREST_MODEL" = RANDOM_FOREST_MODEL,
                    "GRADIENT_BOOST_MODEL" = GRADIENT_BOOST_MODEL,
@@ -741,7 +733,25 @@ for(model_select in names(MODEL_LIST)) {
 
 models_evaluation_data <- models_evaluation_data %>% arrange(desc(AUC_Value), desc(Accuracy))
 ```
-
+```{r}
+# Used this to just print the Model Performance
+# # Use this line if you are just loading Model Objects manually
+MODEL_LIST_NEW <- list("LASSO_MODEL" = LASSO_MODEL 
+                   ,"RANDOM_FOREST_MODEL" = RANDOM_FOREST_MODEL,
+                   "GRADIENT_BOOST_MODEL" = GRADIENT_BOOST_MODEL,
+                   "SVM_LINEAR_MODEL" = SVM_LINEAR_MODEL,
+                   "SVM_RADIAL_MODEL" = SVM_RADIAL_MODEL
+                   )
+# Models Evaluation
+for(model_select in names(MODEL_LIST_NEW)) {
+  cat(paste("####-----",model_select,"-----####\n", sep = ""))
+  print(classification_evaluation_fn(model_selected_var = MODEL_LIST_NEW[[model_select]],
+                                                       test_data_selected = MODEL_TEST_DATA,
+                                                       focus_outcome = MODEL_DV_VAR))
+  
+    
+}
+```
 
 # NN MOdeling
 #### Let us construct the NN for this model
@@ -904,7 +914,7 @@ print(cross_table)
 
 ```
 
-The above model does not seem to satify our expectations, so let us contruct a better neural network model.
+#### The above model does not seem to satify our expectations, so let us contruct a better neural network model.
 
 ```{r}
 # Performing multiple TF runs
@@ -1023,6 +1033,14 @@ conf_mat_NN <- confusionMatrix(predicted.labels, as.factor(test_DV), mode="every
 ```
 
 ```{r}
+# Printing tjhe NN results
+print("###------NEURAL NETWORKS------###")
+print(auc_value)
+print(conf_mat_NN)
+```
+
+
+```{r}
 interim_data <- data.frame(
   Model_Name = "NEURAL_NETWORK",
   AUC_Value = auc_value,
@@ -1038,11 +1056,12 @@ Fianl Model Check
 ```{r}
 # Pringting the best model
 print(classification_evaluation_fn(model_selected_var = RANDOM_FOREST_MODEL,
-                              test_data_selected = MODEL_TEST_DATA,
-                                                       focus_outcome = MODEL_DV_VAR))
+                                   test_data_selected = MODEL_TEST_DATA,
+                                   focus_outcome = MODEL_DV_VAR))
 ```
 
 ```{r}
-v
+RANDOM_FOREST_MODEL
 ```
+
 
